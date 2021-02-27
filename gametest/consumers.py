@@ -24,7 +24,7 @@ class ChatConsumer(WebsocketConsumer):
 
     def chat_message(self, event):
         message = event['message']
-        
+
         # send msg to websocket
         self.send(text_data=json.dumps({
             'type' : 'websocket.send',
@@ -40,7 +40,10 @@ class ChatConsumer(WebsocketConsumer):
         async_to_sync(self.channel_layer.group_send)(
             self.room_group_name,
             {
-                'type': 'chat_message',
+                'type': 'chat_message', 
+                # este type vai chamar uma funcao 
+                # com esse nome q vai enviar a mensagem!
+                # é tipo um callback
                 'message':message
             }
         )
