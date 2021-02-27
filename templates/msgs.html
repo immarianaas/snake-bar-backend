@@ -1,0 +1,7 @@
+<h1> hello!! </h1>
+{% for message in messages %}
+    <tr>
+        <td>{{message.sender}}</td>
+        <td>{{message.message}}</td>
+    </tr>
+    {% endfor %}
