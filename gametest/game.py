@@ -1,4 +1,4 @@
-from gametest.snake import Snake
+from gametest.snake import Food, Snake
 import random
 
 class Game:
@@ -9,17 +9,19 @@ class Game:
     room_attributes = {}
     online = set()
 
-    def get_room(self, room_no, snake_id):
+    def get_room(self, room_no):
         if room_no not in self.room_attributes:
-            return self.open_room(room_no, snake_id)
-        self.room_attributes[room_no]['snakes'].append(Snake(snake_id))
+            return None
         return self.room_attributes[room_no]
 
-    def open_room(self, room_no, snake_id):
+    def add_snake_to_room(self, room_no, snake_id):
+        self.room_attributes[room_no]['snakes'].append(Snake(snake_id))
+
+    def create_room(self, room_no):
 
         self.room_attributes[room_no] = { 
             'food': self.gen_food(3, exclude_points = {(0,0)}), 
-            'snakes': [Snake(snake_id)]
+            'snakes': []
             }
         return self.room_attributes[room_no]
     
@@ -46,7 +48,19 @@ class Game:
     def update(self, snake_data, snake_id, room_no):
         snake = [ a for a in self.room_attributes[room_no]['snakes'] if a.id == snake_id ][0]
         # snake.pos = snake_data['pos']
+        snake.pos = [ (d['X'], d['Y']) for d in snake_data['pos'] ]
+        snake.colours = snake_data['colours']
+        snake.dir = snake_data['dir']
+        snake.tempdir = snake_data['tempdir']
+        snake.len = snake_data['len']
+
+        snake_digesting = []
+        for f in snake_data['digesting']:
+            print('F : ', f)
+            snake_digesting.append(Food(f['pos']['X'], f['pos']['Y'], f['colour'], f['points']))
+
         print("SNAKE DATA: " , snake_data)
+
 
     def leave(self, snake_id, room_no):
         if (len(self.room_attributes[room_no]['snakes']) == 1):
@@ -54,4 +68,7 @@ class Game:
             print('entrou aqui..')
         else:
             self.room_attributes[room_no]['snakes'] = [ a for a in self.room_attributes[room_no]['snakes'] if a.id != snake_id ]
+        print('hello?? antes: ' , len(self.online))
         self.online.remove(snake_id)
+        print('hello?? depois: ' , len(self.online))
+

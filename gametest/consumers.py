@@ -26,6 +26,7 @@ class GameConsumer(WebsocketConsumer):
             self.channel_name
         )
         self.game.leave(self.users[self.channel_name]['id'], self.users[self.channel_name]['room'])
+        del self.users[self.channel_name]
 
     def receive(self, text_data):
         data_json = json.loads(text_data)
@@ -49,9 +50,19 @@ class GameConsumer(WebsocketConsumer):
         # snake_id = self.game.get_snake_id()
 
         snake_id = self.users[self.channel_name]['id']
-        self.users[self.channel_name]['room'] = int(message['room_no'])
+        room_no = int(message['room_no'])
+        self.users[self.channel_name]['room'] = room_no
         
-        room_info = self.game.get_room(222, snake_id).copy()
+        room = self.game.get_room(room_no)
+        # if room is not None:
+        #     self.poll_current()
+        
+        if room is None:
+            room = self.game.create_room(room_no)
+        self.game.add_snake_to_room(room_no, snake_id)
+
+        # room_info = self.game.get_room(222, snake_id).copy()
+        room_info = room.copy()
         room_info['snakes'] = [ a.toJSON() for a in room_info['snakes'] ]
         # send msg to websocket
         self.send(text_data=json.dumps({
@@ -62,14 +73,39 @@ class GameConsumer(WebsocketConsumer):
             },
             'tp' : 'join'
         }))
+        self.poll_current()
+
+
+    def poll_current(self):
+        self.send(text_data=json.dumps({
+            'type' : 'websocket.send',
+            'tp' : 'polling'
+        }))
+
+    def poll_answer(self, events):
+        message = events['message']
+        # self.game.update(message['snake'])
+        room_no = self.users[self.channel_name]['room']
+        # self.game.update(message['snake'], message['snake_id'], room_no)
+        print('\n', message)
+        self.send(text_data=json.dumps({
+            'type' : 'websocket.send',
+            'tp' : 'update',
+            'data' : {
+                'snake' : message['snake'], 
+                'id' : message['snake_id'],
+            }
+        }))        
 
     def move(self, events):
         message = events['message'] # ['message']
         # { snake : [ pos : [], colours : []], snake_id, direcao }
-        print(message)
-        self.game.update(message['snake'], message['snake_id'], message['room_no'])
+        # print(message)
+        room = self.users[self.channel_name]['room']
+        self.game.update(message['snake'], message['snake_id'], room)
         self.send(text_data=json.dumps({
             'type' : 'websocket.send',
+            'tp' : 'move',
             'data' : {
                 'snake' : message['snake'], 
                 'id' : message['snake_id'],
